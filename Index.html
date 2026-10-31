@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+  <title>貸し借りダッシュボード</title>
+
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #152238;
+      --muted: #6b778c;
+      --line: #e7ebf2;
+      --primary: #2563eb;
+      --primary-soft: #eaf1ff;
+      --danger: #dc2626;
+      --danger-soft: #fff0f0;
+      --success: #15803d;
+      --success-soft: #edf9f0;
+      --warning: #a16207;
+      --shadow: 0 8px 26px rgba(25, 40, 70, 0.08);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans JP",
+        sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding:
+        calc(16px + env(safe-area-inset-top))
+        16px
+        calc(32px + env(safe-area-inset-bottom));
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .header-copy {
+      min-width: 0;
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 6vw, 36px);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    .sub {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .icon-button {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 14px;
+      padding: 10px 13px;
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    .status-banner {
+      display: none;
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--danger-soft);
+      color: var(--danger);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .summary-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-card.primary {
+      grid-column: 1 / -1;
+      background:
+        linear-gradient(
+          135deg,
+          #1d4ed8,
+          #3b82f6
+        );
+      color: white;
+      border: 0;
+    }
+
+    .summary-label {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .summary-card.primary .summary-label {
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .summary-value {
+      margin: 0;
+      font-size: clamp(24px, 7vw, 34px);
+      font-weight: 850;
+      letter-spacing: -0.03em;
+    }
+
+    .summary-small {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .summary-card.primary .summary-small {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .progress {
+      height: 8px;
+      margin-top: 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.24);
+      overflow: hidden;
+    }
+
+    .progress > div {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: white;
+      transition: width 0.4s ease;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 6px;
+      margin: 18px -4px 14px;
+      padding: 6px 4px;
+      overflow-x: auto;
+      background: rgba(245, 247, 251, 0.94);
+      backdrop-filter: blur(10px);
+    }
+
+    .tab {
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .tab.active {
+      background: var(--text);
+      color: white;
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 18px 2px 10px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .member-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .member-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 15px;
+      box-shadow: var(--shadow);
+    }
+
+    .member-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .member-name {
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .net {
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .net.plus {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .net.minus {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .net.zero {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .member-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mini-stat {
+      padding: 10px;
+      border-radius: 12px;
+      background: var(--bg);
+    }
+
+    .mini-stat-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .mini-stat-value {
+      margin-top: 4px;
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .loan-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .loan-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .loan-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .route {
+      min-width: 0;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .route .arrow {
+      margin: 0 5px;
+      color: var(--muted);
+    }
+
+    .amount {
+      flex: 0 0 auto;
+      font-size: 18px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .memo {
+      margin-top: 9px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+
+    .loan-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .pay-button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: var(--primary);
+      color: white;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.18);
+    }
+
+    .pay-button:disabled {
+      cursor: wait;
+      opacity: 0.58;
+    }
+
+    .status-banner.success {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .status-banner.error {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .badge.unpaid {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .badge.paid {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .search {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 11px 12px;
+      background: var(--card);
+      outline: none;
+    }
+
+    .search:focus {
+      border-color: var(--primary);
+    }
+
+    .empty {
+      padding: 28px 14px;
+      text-align: center;
+      color: var(--muted);
+      background: var(--card);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+    }
+
+    .loading {
+      display: grid;
+      place-items: center;
+      min-height: 260px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      margin-bottom: 10px;
+      border: 3px solid var(--line);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .pin-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(18, 29, 49, 0.55);
+      backdrop-filter: blur(8px);
+    }
+
+    .pin-card {
+      width: min(100%, 380px);
+      padding: 22px;
+      border-radius: 22px;
+      background: var(--card);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
+    }
+
+    .pin-card h2 {
+      margin: 0 0 8px;
+    }
+
+    .pin-card p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .pin-card input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 12px;
+      font-size: 18px;
+      text-align: center;
+      letter-spacing: 0.14em;
+      outline: none;
+    }
+
+    .pin-card button {
+      width: 100%;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 13px;
+      padding: 12px;
+      background: var(--primary);
+      color: white;
+      font-weight: 800;
+    }
+
+    .pin-error {
+      min-height: 20px;
+      margin-top: 8px;
+      color: var(--danger);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (min-width: 700px) {
+      .app {
+        padding-left: 24px;
+        padding-right: 24px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 2fr repeat(3, 1fr);
+      }
+
+      .summary-card.primary {
+        grid-column: auto;
+      }
+
+      .member-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="pinOverlay" class="pin-overlay">
+    <div class="pin-card">
+      <h2>PINを入力</h2>
+      <p>
+        このダッシュボードには貸し借り情報が含まれます。
+        グループで共有しているPINを入力してください。
+      </p>
+
+      <input
+        id="pinInput"
+        type="password"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        placeholder="PIN"
+      >
+
+      <button onclick="submitPin()">開く</button>
+
+      <div
+        id="pinError"
+        class="pin-error"
+      ></div>
+    </div>
+  </div>
+
+  <main class="app">
+    <header class="header">
+      <div class="header-copy">
+        <p class="eyebrow">LOAN DASHBOARD</p>
+        <h1 id="groupName">貸し借りダッシュボード</h1>
+        <p
+          id="updatedAt"
+          class="sub"
+        >読み込み中...</p>
+      </div>
+
+      <button
+        class="icon-button"
+        onclick="refreshData()"
+        aria-label="更新"
+      >↻ 更新</button>
+    </header>
+
+    <div
+      id="statusBanner"
+      class="status-banner"
+    ></div>
+
+    <div id="loading" class="loading">
+      <div>
+        <div class="spinner"></div>
+        読み込み中
+      </div>
+    </div>
+
+    <div id="content" style="display:none;">
+      <section class="summary-grid">
+        <article class="summary-card primary">
+          <p class="summary-label">現在の未返済総額</p>
+          <p
+            id="outstandingValue"
+            class="summary-value"
+          >¥0</p>
+          <p
+            id="outstandingSmall"
+            class="summary-small"
+          ></p>
+
+          <div class="progress">
+            <div id="repaymentProgress"></div>
+          </div>
+        </article>
+
+        <article class="summary-card">
+          <p class="summary-label">返済済み</p>
+          <p
+            id="repaidValue"
+            class="summary-value"
+          >¥0</p>
+          <p
+            id="repaidSmall"
+            class="summary-small"
+          ></p>
+        </article>
+
+        <article class="summary-card">
+          <p class="summary-label">返済率</p>
+          <p
+            id="rateValue"
+            class="summary-value"
+          >0%</p>
+          <p class="summary-small">金額ベース</p>
+        </article>
+
+        <article class="summary-card">
+          <p class="summary-label">全貸付</p>
+          <p
+            id="totalValue"
+            class="summary-value"
+          >¥0</p>
+          <p
+            id="totalSmall"
+            class="summary-small"
+          ></p>
+        </article>
+      </section>
+
+      <nav class="tabs">
+        <button
+          class="tab active"
+          data-tab="members"
+          onclick="switchTab('members')"
+        >メンバー別</button>
+
+        <button
+          class="tab"
+          data-tab="unpaid"
+          onclick="switchTab('unpaid')"
+        >未返済</button>
+
+        <button
+          class="tab"
+          data-tab="history"
+          onclick="switchTab('history')"
+        >全履歴</button>
+      </nav>
+
+      <section
+        id="panel-members"
+        class="panel active"
+      >
+        <div class="section-title">
+          <h2>メンバー別状況</h2>
+          <span>受取予定・支払予定を確認</span>
+        </div>
+
+        <div
+          id="memberGrid"
+          class="member-grid"
+        ></div>
+      </section>
+
+      <section
+        id="panel-unpaid"
+        class="panel"
+      >
+        <div class="section-title">
+          <h2>未返済一覧</h2>
+          <span id="unpaidCountLabel"></span>
+        </div>
+
+        <div class="toolbar">
+          <input
+            id="unpaidSearch"
+            class="search"
+            type="search"
+            placeholder="名前・内容で検索"
+            oninput="renderUnpaid()"
+          >
+        </div>
+
+        <div
+          id="unpaidList"
+          class="loan-list"
+        ></div>
+      </section>
+
+      <section
+        id="panel-history"
+        class="panel"
+      >
+        <div class="section-title">
+          <h2>全履歴</h2>
+          <span id="historyCountLabel"></span>
+        </div>
+
+        <div class="toolbar">
+          <input
+            id="historySearch"
+            class="search"
+            type="search"
+            placeholder="名前・内容で検索"
+            oninput="renderHistory()"
+          >
+        </div>
+
+        <div
+          id="historyList"
+          class="loan-list"
+        ></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    let dashboardData = null;
+    let currentPin = '';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      google.script.run
+        .withSuccessHandler(config => {
+          if (config.requiresPin) {
+            currentPin =
+              sessionStorage.getItem('loan_dashboard_pin') || '';
+
+            if (currentPin) {
+              loadData(currentPin, true);
+            } else {
+              showPin();
+            }
+          } else {
+            loadData('');
+          }
+        })
+        .withFailureHandler(showError)
+        .getDashboardConfig();
+    });
+
+
+    function showPin() {
+      document.getElementById('pinOverlay').style.display = 'flex';
+      setTimeout(() => {
+        document.getElementById('pinInput').focus();
+      }, 50);
+    }
+
+
+    function hidePin() {
+      document.getElementById('pinOverlay').style.display = 'none';
+      document.getElementById('pinError').textContent = '';
+    }
+
+
+    function submitPin() {
+      const pin =
+        document.getElementById('pinInput').value.trim();
+
+      document.getElementById('pinError').textContent = '';
+
+      loadData(pin, false, true);
+    }
+
+
+    document
+      .getElementById('pinInput')
+      .addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          submitPin();
+        }
+      });
+
+
+    function loadData(
+      pin,
+      silentPinFailure = false,
+      fromPinForm = false
+    ) {
+      setLoading(true);
+
+      google.script.run
+        .withSuccessHandler(data => {
+          currentPin = pin || '';
+
+          if (currentPin) {
+            sessionStorage.setItem(
+              'loan_dashboard_pin',
+              currentPin
+            );
+          }
+
+          hidePin();
+
+          dashboardData = data;
+
+          renderDashboard();
+
+          setLoading(false);
+        })
+        .withFailureHandler(error => {
+          setLoading(false);
+
+          const message =
+            error && error.message
+              ? error.message
+              : String(error || 'エラーが発生しました。');
+
+          if (
+            message.includes('PIN') ||
+            fromPinForm ||
+            silentPinFailure
+          ) {
+            sessionStorage.removeItem('loan_dashboard_pin');
+            currentPin = '';
+            showPin();
+
+            document.getElementById('pinError').textContent =
+              message.includes('PIN')
+                ? 'PINが違います。'
+                : message;
+
+            return;
+          }
+
+          showError(error);
+        })
+        .getDashboardData(pin || '');
+    }
+
+
+    function refreshData() {
+      loadData(currentPin);
+    }
+
+
+    function renderDashboard() {
+      if (!dashboardData) {
+        return;
+      }
+
+      const summary = dashboardData.summary;
+
+      document.getElementById('groupName').textContent =
+        dashboardData.groupName || '貸し借りダッシュボード';
+
+      document.getElementById('updatedAt').textContent =
+        `最終更新 ${dashboardData.generatedAt}`;
+
+      document.getElementById('outstandingValue').textContent =
+        yen(summary.outstanding);
+
+      document.getElementById('outstandingSmall').textContent =
+        `${summary.unpaidCount}件が未返済`;
+
+      document.getElementById('repaidValue').textContent =
+        yen(summary.repaid);
+
+      document.getElementById('repaidSmall').textContent =
+        `${summary.repaidCount}件が返済済み`;
+
+      document.getElementById('rateValue').textContent =
+        `${summary.repaymentRate}%`;
+
+      document.getElementById('totalValue').textContent =
+        yen(summary.total);
+
+      document.getElementById('totalSmall').textContent =
+        `全${summary.totalCount}件`;
+
+      document.getElementById('repaymentProgress').style.width =
+        `${Math.max(
+          0,
+          Math.min(100, summary.repaymentRate)
+        )}%`;
+
+      renderMembers();
+      renderUnpaid();
+      renderHistory();
+
+      document.getElementById('content').style.display = 'block';
+    }
+
+
+    function renderMembers() {
+      const container =
+        document.getElementById('memberGrid');
+
+      const members =
+        dashboardData.members || [];
+
+      if (!members.length) {
+        container.innerHTML =
+          '<div class="empty">メンバー情報がありません。</div>';
+
+        return;
+      }
+
+      container.innerHTML =
+        members
+          .map(member => {
+            const netClass =
+              member.net > 0
+                ? 'plus'
+                : member.net < 0
+                  ? 'minus'
+                  : 'zero';
+
+            const netText =
+              member.net > 0
+                ? `${yen(member.net)} 受取予定`
+                : member.net < 0
+                  ? `${yen(Math.abs(member.net))} 支払予定`
+                  : '精算済み';
+
+            return `
+              <article class="member-card">
+                <div class="member-head">
+                  <div class="member-name">
+                    ${escapeHtml(member.name)}
+                  </div>
+
+                  <div class="net ${netClass}">
+                    ${netText}
+                  </div>
+                </div>
+
+                <div class="member-stats">
+                  <div class="mini-stat">
+                    <div class="mini-stat-label">
+                      受取予定
+                    </div>
+                    <div class="mini-stat-value">
+                      ${yen(member.receivable)}
+                    </div>
+                  </div>
+
+                  <div class="mini-stat">
+                    <div class="mini-stat-label">
+                      支払予定
+                    </div>
+                    <div class="mini-stat-value">
+                      ${yen(member.payable)}
+                    </div>
+                  </div>
+
+                  <div class="mini-stat">
+                    <div class="mini-stat-label">
+                      累計貸付
+                    </div>
+                    <div class="mini-stat-value">
+                      ${yen(member.lentTotal)}
+                    </div>
+                  </div>
+
+                  <div class="mini-stat">
+                    <div class="mini-stat-label">
+                      累計借入
+                    </div>
+                    <div class="mini-stat-value">
+                      ${yen(member.borrowedTotal)}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            `;
+          })
+          .join('');
+    }
+
+
+    function renderUnpaid() {
+      if (!dashboardData) {
+        return;
+      }
+
+      const query =
+        normalizeSearch(
+          document.getElementById('unpaidSearch').value
+        );
+
+      const loans =
+        dashboardData.loans
+          .filter(loan => loan.status !== '返済済み')
+          .filter(loan => matchesSearch(loan, query));
+
+      document.getElementById('unpaidCountLabel').textContent =
+        `${loans.length}件`;
+
+      renderLoanList(
+        document.getElementById('unpaidList'),
+        loans,
+        '未返済の貸付はありません。'
+      );
+    }
+
+
+    function renderHistory() {
+      if (!dashboardData) {
+        return;
+      }
+
+      const query =
+        normalizeSearch(
+          document.getElementById('historySearch').value
+        );
+
+      const loans =
+        dashboardData.loans
+          .filter(loan => matchesSearch(loan, query));
+
+      document.getElementById('historyCountLabel').textContent =
+        `${loans.length}件`;
+
+      renderLoanList(
+        document.getElementById('historyList'),
+        loans,
+        '履歴がありません。'
+      );
+    }
+
+
+    function renderLoanList(container, loans, emptyText) {
+      if (!loans.length) {
+        container.innerHTML =
+          `<div class="empty">${escapeHtml(emptyText)}</div>`;
+
+        return;
+      }
+
+      container.innerHTML =
+        loans
+          .map(loan => {
+            const paid = loan.status === '返済済み';
+
+            const badge =
+              paid
+                ? '<span class="badge paid">返済済み</span>'
+                : '<span class="badge unpaid">未返済</span>';
+
+            const paidMeta =
+              paid && loan.paidAt
+                ? `<span>返済 ${escapeHtml(loan.paidAt)}</span>`
+                : '';
+
+            return `
+              <article class="loan-card">
+                <div class="loan-top">
+                  <div class="route">
+                    ${escapeHtml(loan.lenderName)}
+                    <span class="arrow">→</span>
+                    ${escapeHtml(loan.borrowerName)}
+                  </div>
+
+                  <div class="amount">
+                    ${yen(loan.amount)}
+                  </div>
+                </div>
+
+                <div class="meta">
+                  ${badge}
+                  <span>${escapeHtml(loan.lentAt)}</span>
+                  ${paidMeta}
+                </div>
+
+                ${
+                  loan.memo
+                    ? `<div class="memo">${escapeHtml(loan.memo)}</div>`
+                    : ''
+                }
+
+                ${
+                  !paid
+                    ? `
+                      <div class="loan-actions">
+                        <button
+                          class="pay-button"
+                          onclick="markLoanPaid('${loan.id}', this)"
+                        >返済済みにする</button>
+                      </div>
+                    `
+                    : ''
+                }
+              </article>
+            `;
+          })
+          .join('');
+    }
+
+
+    function markLoanPaid(loanId, button) {
+      if (!dashboardData) {
+        return;
+      }
+
+      const loan =
+        dashboardData.loans.find(item => item.id === loanId);
+
+      if (!loan) {
+        showErrorMessage('貸付データが見つかりません。');
+        return;
+      }
+
+      if (loan.status === '返済済み') {
+        showSuccessMessage('この貸付はすでに返済済みです。');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `${loan.borrowerName}さんの ${yen(loan.amount)} を\n` +
+        '返済済みに変更しますか？\n\n' +
+        'この操作はスプレッドシートにも反映されます。'
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = '更新中...';
+
+      google.script.run
+        .withSuccessHandler(result => {
+          showSuccessMessage(
+            result && result.message
+              ? result.message
+              : '返済済みに更新しました。'
+          );
+
+          // スプレッドシートの最新状態を再取得し、
+          // 総額・返済率・一覧をすべて更新する。
+          loadData(currentPin);
+        })
+        .withFailureHandler(error => {
+          button.disabled = false;
+          button.textContent = originalText;
+          showErrorMessage(
+            error && error.message
+              ? error.message
+              : '返済更新に失敗しました。'
+          );
+        })
+        .markLoanAsPaidFromDashboard(
+          currentPin,
+          loanId
+        );
+    }
+
+
+    function showSuccessMessage(message) {
+      const banner =
+        document.getElementById('statusBanner');
+
+      banner.textContent = message;
+      banner.classList.remove('error');
+      banner.classList.add('success');
+      banner.style.display = 'block';
+
+      window.setTimeout(() => {
+        if (banner.classList.contains('success')) {
+          banner.style.display = 'none';
+        }
+      }, 3500);
+    }
+
+
+    function showErrorMessage(message) {
+      const banner =
+        document.getElementById('statusBanner');
+
+      banner.textContent = message;
+      banner.classList.remove('success');
+      banner.classList.add('error');
+      banner.style.display = 'block';
+    }
+
+
+    function switchTab(name) {
+      document
+        .querySelectorAll('.tab')
+        .forEach(tab => {
+          tab.classList.toggle(
+            'active',
+            tab.dataset.tab === name
+          );
+        });
+
+      document
+        .querySelectorAll('.panel')
+        .forEach(panel => {
+          panel.classList.toggle(
+            'active',
+            panel.id === `panel-${name}`
+          );
+        });
+    }
+
+
+    function matchesSearch(loan, query) {
+      if (!query) {
+        return true;
+      }
+
+      const text =
+        [
+          loan.lenderName,
+          loan.borrowerName,
+          loan.memo,
+          loan.status,
+          loan.id
+        ]
+          .join(' ')
+          .toLocaleLowerCase();
+
+      return text.includes(query);
+    }
+
+
+    function normalizeSearch(value) {
+      return String(value || '')
+        .trim()
+        .toLocaleLowerCase();
+    }
+
+
+    function yen(value) {
+      return new Intl.NumberFormat(
+        'ja-JP',
+        {
+          style: 'currency',
+          currency: 'JPY',
+          maximumFractionDigits: 0
+        }
+      ).format(Number(value) || 0);
+    }
+
+
+    function setLoading(isLoading) {
+      document.getElementById('loading').style.display =
+        isLoading ? 'grid' : 'none';
+
+      if (isLoading) {
+        document.getElementById('content').style.display = 'none';
+      }
+    }
+
+
+    function showError(error) {
+      const message =
+        error && error.message
+          ? error.message
+          : String(error || 'エラーが発生しました。');
+
+      const banner =
+        document.getElementById('statusBanner');
+
+      banner.textContent = message;
+      banner.classList.remove('success');
+      banner.classList.add('error');
+      banner.style.display = 'block';
+
+      document.getElementById('updatedAt').textContent =
+        '読み込みに失敗しました';
+    }
+
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
